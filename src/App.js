@@ -1,53 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import ListComponent from './listComponent';
 import produce from "immer";
 
-class App extends React.Component {
+const App = function (props) {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      items: [],
-      newPost: ''
-    };
+  const [items, setItems] = useState([]);
+  const [postText, setPostText] = useState('');
 
-    this.updateVotes = this.updateVotes.bind(this);
-    this.deleteItem = this.deleteItem.bind(this);
-    this.updateText = this.updateText.bind(this);
-    this.addPost = this.addPost.bind(this);
-  }
-
-  updateText(e) {
-    this.setState({
-      newPost: e.currentTarget.value
-    })
-  }
-
-  addPost() {
-    this.setState({
-      items: [
-        ...this.state.items,
-        { id: 1, title: this.state.newPost, votes: 0 }
-      ],
-      newPost: ''
-    });
-
-  }
-
-  deleteItem(id) {
-    const index = this.state.items.findIndex(item => item.id === id);
-    this.setState({
-      items: [
-        ...this.state.items.slice(0, index),
-        ...this.state.items.slice(index + 1, this.state.items.length),
-      ]
-    })
-  }
-
-  componentDidMount() {
-    // fetch data from reddit
-    return fetch('http://www.reddit.com/.json')
+  useEffect(()=> {
+    fetch('http://www.reddit.com/.json')
       .then(r => r.json())
       .then(json => json.data.children.map(o => ({
         title: o.data.title,
@@ -55,32 +17,45 @@ class App extends React.Component {
         votes: o.data.ups
       })))
       .then(loadedItems => {
-        this.setState({ items: loadedItems })
+        setItems(loadedItems);
       });
+  }, [] );
+
+  const updateVotes = function (newCount, id) {
+      const itemList = produce(items, draft => {
+        draft[draft.findIndex(item => item.id === id)].votes = newCount;
+      });
+      setItems(itemList);
   }
 
-  updateVotes(newCount, id) {
-    const itemList = produce(this.state.items, draft => {
-      draft[draft.findIndex(item => item.id === id)].votes = newCount;
-    });
-    this.setState({
-      items: itemList
-    });
+  const deleteItem = function (id) {
+    const index = items.findIndex(item => item.id === id);
+    setItems([
+      ...items.slice(0, index),
+      ...items.slice(index + 1, items.length),
+    ]
+    )
   }
 
-  render() {
-    return (
-      <div className="App" class="bbb">
-        <header className="App-header">
-          <input type="text" value={this.state.newPost} onChange={(e) => this.updateText(e)}></input><button onClick={this.addPost}>Add Post</button>
-        </header>
-        <ListComponent
-          listItems={this.state.items}
-          updateVotes={this.updateVotes}
-          deleteItem={this.deleteItem}></ListComponent>
-      </div>
-    );
+  const addItem = function () {
+    setItems([
+      ...items,
+      { id: 1, title: postText, votes: 0 }
+    ]);
+    setPostText('');
   }
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <input type="text" value={postText} onChange={(e) => setPostText(e.currentTarget.value)}></input><button onClick={addItem}>Add Post</button>
+      </header>
+      <ListComponent
+        listItems={items}
+        updateVotes={updateVotes}
+        deleteItem={deleteItem}></ListComponent>
+    </div>
+  );
 }
 
 export default App;

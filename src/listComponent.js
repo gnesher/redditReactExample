@@ -3,8 +3,6 @@ import ListItem from './listItem';
 
 function ListComponent(props) {
 
-    console.log(props);
-
     const list = <ul>
                     {props.listItems.map((item, index) =>
                     <ListItem key={item.id} title={item.title} deleteItem={props.deleteItem}
